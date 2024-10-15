@@ -1,11 +1,21 @@
 /* global Word console */
+
 // state
 let XML_data : string;
 
 export async function createWindow() {
   // Write text to the document.
     await Word.run(getData);
-    await Word.run(makeNewDocument);
+
+    const checkboxes = <HTMLInputElement>document.getElementById("checkboxes");
+
+    console.log(checkboxes);
+
+    //if ()
+    //  await Word.run(makeStudentDocument);
+    
+    // if ()
+    //   await Word.run(makeTeacherDocument);
 
 }
 
@@ -18,17 +28,34 @@ const getData = async (context) => {
   XML_data =  bodyOOXML.value;
 }
 
-const makeNewDocument = async (context) => {
-  const newDocument = context.application.createDocument(); 
+const makeStudentDocument = async (context) => {
+  const studentDocument = context.application.createDocument(); 
   await context.sync();
   
-  const newDocBody: Word.Body = newDocument.body;
+  const studentDocumentBody: Word.Body = studentDocument.body;
   await context.sync();
 
-  newDocBody.insertOoxml(XML_data, Word.InsertLocation.start);
+  studentDocumentBody.insertOoxml(await parseXML(), Word.InsertLocation.start);
   await context.sync();
   
-  newDocument.open();
-  //newDocument.save("Prompt");
+  studentDocument.open();
   await context.sync();
+}
+
+const makeTeacherDocument = async (context) => {
+  const teacherDocument = context.application.createDocument(); 
+  await context.sync();
+  
+  const teacherDocumentBody: Word.Body = teacherDocument.body;
+  await context.sync();
+
+  teacherDocumentBody.insertOoxml(await parseXML(), Word.InsertLocation.start);
+  await context.sync();
+  
+  teacherDocument.open();
+  await context.sync();
+}
+
+const parseXML = async () => {
+  return XML_data; 
 }
