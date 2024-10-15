@@ -1,14 +1,12 @@
 /* global Word console */
 // state
 let XML_data : string;
-let newDocument: Word.DocumentCreated;
 
 export async function createWindow() {
   // Write text to the document.
     await Word.run(getData);
     await Word.run(makeNewDocument);
 
-    
 }
 
 const getData = async (context) => {
@@ -21,7 +19,7 @@ const getData = async (context) => {
 }
 
 const makeNewDocument = async (context) => {
-  newDocument = context.application.createDocument(); 
+  const newDocument = context.application.createDocument(); 
   await context.sync();
   
   const newDocBody: Word.Body = newDocument.body;
@@ -31,4 +29,6 @@ const makeNewDocument = async (context) => {
   await context.sync();
   
   newDocument.open();
+  //newDocument.save("Prompt");
+  await context.sync();
 }

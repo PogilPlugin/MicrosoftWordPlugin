@@ -19,6 +19,10 @@ const App: React.FC<AppProps> = () => {
   const styles = useStyles();
   return (
     <div className={styles.root}>
+      <p>Input a file name.</p>
+      <form>
+        <input type="text" id="file"/>
+      </form>
       <Button appearance="primary" className={styles.button} size="large" onClick={createWindow}>
         Create Document
       </Button>
