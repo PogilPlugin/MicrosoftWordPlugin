@@ -4,18 +4,40 @@
 let XML_data : string;
 
 export async function createWindow() {
+
+  console.log("HELLO");
+
   // Write text to the document.
-    await Word.run(getData);
+  await Word.run(getData);
 
-    const checkboxes = <HTMLInputElement>document.getElementById("checkboxes");
+  await Word.run(getCheckboxes);
 
-    console.log(checkboxes);
-
-    //if ()
-    //  await Word.run(makeStudentDocument);
+  //if ()
+  await Word.run(makeStudentDocument);
     
-    // if ()
-    //   await Word.run(makeTeacherDocument);
+  // if ()
+    //await Word.run(makeTeacherDocument);
+
+}
+
+
+const getCheckboxes = async (context) => { 
+  const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
+  const teacherDocCheckbox = <HTMLInputElement>document.getElementById("teacherDocCheckbox");
+  await context.sync();
+
+  if (studentDocCheckbox.checked)
+    await logToDoc(context, "student");
+
+  if (teacherDocCheckbox.checked)
+    await logToDoc(context, "teacher");
+
+}
+
+
+const logToDoc = async (context, str: string) => {
+  const body: Word.Body = context.document.body;
+  body.insertText(str, Word.InsertLocation.start);
 
 }
 

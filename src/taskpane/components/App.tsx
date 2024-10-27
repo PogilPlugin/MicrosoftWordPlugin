@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createWindow } from "../taskpane";
-import { makeStyles, Button } from "@fluentui/react-components";
+import { makeStyles, Button, Label,} from "@fluentui/react-components";
 
 interface AppProps {
   title: string;
@@ -9,9 +9,13 @@ interface AppProps {
 const useStyles = makeStyles({
   root: {
     height: "100vh",
+    width: "100%",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   button: {
-    margin: "25%",
+    margin: "10px",
   },
 });
 
@@ -19,6 +23,11 @@ const App: React.FC<AppProps> = () => {
   const styles = useStyles();
   return (
     <div className={styles.root}>
+      <form >
+        <input id="studentDocCheckbox" type="checkbox" /> <Label>Create Student Document</Label>
+        <input id="teacherDocCheckbox" type="checkbox" /> <Label>Create Teacher Document</Label>
+      </form>
+      
       <Button appearance="primary" className={styles.button} size="large" onClick={createWindow}>
         Create Document
       </Button>
