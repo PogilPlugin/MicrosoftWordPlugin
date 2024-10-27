@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createWindow } from "../taskpane";
+import { createWindow, convertToPdf } from "../taskpane";
 import { makeStyles, Button, Label,} from "@fluentui/react-components";
 
 interface AppProps {
@@ -31,6 +31,8 @@ const App: React.FC<AppProps> = () => {
       <Button appearance="primary" className={styles.button} size="large" onClick={createWindow}>
         Create Document
       </Button>
+      <Button id="convertToPdf" onClick={convertToPdf}>PDF</Button>
+
     </div>
   );
 };

@@ -1,25 +1,16 @@
 /* global Word console */
+import html2pdf from "html2pdf.js";
 
 // state
 let XML_data : string;
 
-export async function createWindow() {
+async function createWindow() {
 
-  console.log("HELLO");
-
-  // Write text to the document.
   await Word.run(getData);
 
   await Word.run(getCheckboxes);
 
-  //if ()
-  await Word.run(makeStudentDocument);
-    
-  // if ()
-    //await Word.run(makeTeacherDocument);
-
 }
-
 
 const getCheckboxes = async (context) => { 
   const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
@@ -28,12 +19,12 @@ const getCheckboxes = async (context) => {
 
   if (studentDocCheckbox.checked)
     await logToDoc(context, "student");
+    await Word.run(makeStudentDocument);
 
   if (teacherDocCheckbox.checked)
     await logToDoc(context, "teacher");
-
+    await Word.run(makeTeacherDocument);
 }
-
 
 const logToDoc = async (context, str: string) => {
   const body: Word.Body = context.document.body;
@@ -81,3 +72,28 @@ const makeTeacherDocument = async (context) => {
 const parseXML = async () => {
   return XML_data; 
 }
+
+// Word doc to pdf convert
+async function convertToPdf() {
+  try {
+    await Word.run(async (context) => { 
+      const body = context.document.body;
+      const htmlContent = body.getHtml(); 
+      await context.sync(); 
+     
+      const pdfOptions = {
+        margin: 1,
+        filename: 'document.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+ 
+      html2pdf().from(htmlContent.value).set(pdfOptions).save();
+      
+    });
+  } catch (error) {
+  }
+}
+
+export {convertToPdf, createWindow};
