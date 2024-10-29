@@ -7,6 +7,11 @@ let checkboxes: { student: boolean; teacher: boolean; pdf: boolean } = { student
 
 // add in parsing
 
+// run on startup
+Office.onReady(() => {
+  
+});
+
 async function createDocs() {
   console.log("Begin: ");
 
@@ -43,6 +48,7 @@ async function createDocs() {
   });
 
   console.log("End;");
+
 }
 
 const getCheckboxes = async (context) => {

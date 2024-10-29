@@ -29,6 +29,7 @@ const useStyles = makeStyles({
 
 const App: React.FC<AppProps> = () => {
   const styles = useStyles();
+
   return (
     <div className={styles.root}>
       <form className={styles.flex}>
@@ -45,6 +46,10 @@ const App: React.FC<AppProps> = () => {
           <Label>Create PDF</Label>
         </div>
       </form>
+
+      <form>
+                <input type="file" id="file" />
+          </form>
 
       <div className={styles.flex}>
         <Text className={styles.section}></Text>
