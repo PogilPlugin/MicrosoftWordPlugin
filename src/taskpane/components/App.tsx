@@ -1,6 +1,6 @@
 import * as React from "react";
-import { createWindow, convertToPdf  } from "../taskpane"; //converttopdf addedd
-import { makeStyles, Button } from "@fluentui/react-components";
+import createDocs from "../taskpane";
+import { makeStyles, Button, Label, Text } from "@fluentui/react-components";
 
 interface AppProps {
   title: string;
@@ -8,31 +8,56 @@ interface AppProps {
 
 const useStyles = makeStyles({
   root: {
-    height: "100vh",
+    height: "100%",
+    width: "100%",
+    display: "flex",
+    flexWrap: 'wrap',
+    flexDirection: 'column'
   },
   button: {
-    margin: "25%",
+    margin: "10px",
   },
+  flex: {
+    flex: '1'
+  },
+  section: {
+    display: 'block',
+    margin: '10px',
+    textAlign: 'center',
+  }
 });
-//it is for checking to console message because i got error( it is good now)
-const handlePdfClick = () => {
-  console.log("PDF button clocked.");
-  convertToPdf();
-};
 
-// convertopdf button added
 const App: React.FC<AppProps> = () => {
   const styles = useStyles();
+
   return (
     <div className={styles.root}>
-      <p>Input a file name.</p>
-      <form>
-        <input type="text" id="file"/>
+      <form className={styles.flex}>
+        <div className={styles.section}>
+          <input id="studentDocCheckbox" type="checkbox" />
+          <Label>Create Student Document</Label>
+        </div>
+        <div className={styles.section}>
+          <input id="teacherDocCheckbox" type="checkbox" />
+          <Label>Create Teacher Document</Label>
+        </div>
+        <div className={styles.section}>
+          <input id="pdfDocCheckbox" type="checkbox" />
+          <Label>Create PDF</Label>
+        </div>
       </form>
-      <Button appearance="primary" className={styles.button} size="large" onClick={createWindow}>
-        Create Converted PDF 
+
+      <form>
+                <input type="file" id="file" />
+          </form>
+
+      <div className={styles.flex}>
+        <Text className={styles.section}></Text>
+      </div>
+
+      <Button appearance="primary" className={styles.button} size="large" onClick={createDocs}>
+        Create Documents
       </Button>
-      <button id="convertToPdf" onClick={handlePdfClick}>PDF'ye Dönüştür</button>
 
     </div>
   );

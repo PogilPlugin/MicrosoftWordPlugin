@@ -1,68 +1,117 @@
-/* global Word, console */
-import { jsPDF } from "jspdf";
+/* global Word console */
 import html2pdf from "html2pdf.js";
 
-// state
-let XML_data = '';
+let xmlData: string;
+let htmlData: string;
+let checkboxes: { student: boolean; teacher: boolean; pdf: boolean } = { student: false, teacher: false, pdf: false };
 
-export async function createWindow() {
-  // take text from word
-  await Word.run(getData); // get data
-  await Word.run(makeNewDocument); // make new doc
+// add in parsing
+
+// run on startup
+Office.onReady(() => {
+  
+});
+
+async function createDocs() {
+  console.log("Begin: ");
+
+  await Word.run(async (context) => {
+    
+    await getCheckboxes(context);
+
+    if (!anyDocs()) {
+      console.log("No Documents selected.");
+      return;
+    }
+
+    if (checkboxes.pdf) {
+      console.log('Making new pdf doc:')
+      await getHtml(context);
+
+      if (checkboxes.student)
+        makePDF(xmlData);
+      if (checkboxes.teacher)
+        makePDF(xmlData);
+
+    } else {
+      console.log('Making new word doc:')
+      await getXml(context);
+
+      if (checkboxes.student)
+        makeDocument(context, xmlData);
+      if (checkboxes.teacher)
+        makeDocument(context, xmlData);
+
+    }
+
+    return;
+  });
+
+  console.log("End;");
+
 }
 
-// Word belgesinin içeriğini almak
-const getData = async (context) => {
-  const body = context.document.body;
-  const bodyOOXML = body.getOoxml(); //get ooml from word doc
+const getCheckboxes = async (context) => {
+  const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
+  const teacherDocCheckbox = <HTMLInputElement>document.getElementById("teacherDocCheckbox");
+  const pdfDocCheckbox = <HTMLInputElement>document.getElementById("pdfDocCheckbox");
   await context.sync();
 
-  XML_data = bodyOOXML.value; // keep ooml data
+  checkboxes.student = studentDocCheckbox.checked;
+  checkboxes.teacher = teacherDocCheckbox.checked;
+  checkboxes.pdf = pdfDocCheckbox.checked;
+  console.log(`settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher},  'pdf': ${checkboxes.pdf},}`);
 };
 
-// new word doc and add content
-const makeNewDocument = async (context) => {
-  const newDocument = context.application.createDocument(); // Yeni belge oluştur
+const anyDocs = (): boolean => {
+  return checkboxes.teacher || checkboxes.student;
+};
+
+const logToDoc = async (context, str: string) => {
+  const body: Word.Body = context.document.body;
+  body.insertText(str, Word.InsertLocation.start);
+};
+
+const getXml = async (context) => {
+  const body: Word.Body = context.document.body;
+  const bodyOOXML = body.getOoxml();
   await context.sync();
 
-  const newDocBody = newDocument.body;
+  xmlData = bodyOOXML.value;
+};
+
+const getHtml = async (context) => {
+  const body: Word.Body = context.document.body;
+  const bodyHTML = body.getHtml();
   await context.sync();
 
-  newDocBody.insertOoxml(XML_data, Word.InsertLocation.start); // OOXML verisini yeni belgenin başına ekle
+  htmlData = bodyHTML.value;
+};
+
+const makeDocument = async (context, content) => {
+  const doc = context.application.createDocument();
   await context.sync();
 
-  newDocument.open(); // open new file
+  const docBody: Word.Body = doc.body;
+  await context.sync();
+
+  docBody.insertOoxml(content, Word.InsertLocation.start);
+  await context.sync();
+
+  doc.open();
   await context.sync();
 };
 
-// Word doc to pdf convert
-export async function convertToPdf() { // func
-  try {
-    //get content from word
-    await Word.run(async (context) => { 
-      const body = context.document.body;
-      const htmlContent = body.getHtml(); // take word doc to html format
-      await context.sync(); //office js processing 
-  /////////////////////////////////////////////////////////////////
-      // HTMLto  PDF with  html2pdf////////////
-      const pdfOptions = {
-        margin: 1,
-        filename: 'document.pdf', // i need to do set up with eli code
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      };
-  //////////////////////////////////////////////////////////////
-      // take html content and make pdf 
-      html2pdf().from(htmlContent.value).set(pdfOptions).save();
-      //html2pdf() - library
-      //from(htmlContent.value),- take html content and styles from converted html by word
-      //set -- convert pdf 
-      //save -- downlad
-      console.log("pdf succesfull donwload");
-    });
-  } catch (error) {
-    console.error('pdf download ERROR:', error);
-  }
-  ////////////////////////////////////////////////////////////////
-}
+const makePDF = async (content) => {
+  const pdfOptions = {
+    margin: 1,
+    filename: "document.pdf",
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+  };
+
+  html2pdf().from(content).set(pdfOptions).save();
+};
+
+export default createDocs;
