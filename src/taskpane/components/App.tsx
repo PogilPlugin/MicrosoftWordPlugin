@@ -47,10 +47,6 @@ const App: React.FC<AppProps> = () => {
         </div>
       </form>
 
-      <form>
-                <input type="file" id="file" />
-          </form>
-
       <div className={styles.flex}>
         <Text className={styles.section}></Text>
       </div>

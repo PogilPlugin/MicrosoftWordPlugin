@@ -6,7 +6,7 @@ Function Descriptions:
 - `createDocs`: Main function that coordinates document creation based on user choices.
 - `getCheckboxes`: Retrieves the selected options (Student, Teacher, PDF) from the user interface.
 - `getXml` and `getHtml`: Fetches the document content in XML and HTML formats.
-- `filteroutStudHligh`, `filteroutTeachHlight`: Filters for Student and Teacher in XML and HTML content for Word.
+- `filterStudentXML`, `filterTeacherXML`: Filters for Student and Teacher in XML and HTML content for Word.
 - `pdfStudentFilter`, `pdfTeacherFilter`: Filters for Student and Teacher in HTML content specifically for PDF conversion.
 - `makeDocument`: Creates a new Word document with the specified content.
 - `makePDF`: Generates and saves a PDF from HTML content with the applied filters.
@@ -14,64 +14,50 @@ Function Descriptions:
 --YIGIT TURAN
 */
 
-/* global Word, console */
+
+/* global Word console */
 import html2pdf from "html2pdf.js";
 
-// Variables to store document content
-let xmlData: string; // Word document content in OOXML format
-let htmlData: string; // Word document content in HTML format
-
-// Stores user selections for document creation options
+let xmlData: string;
+let htmlData: string;
 let checkboxes: { student: boolean; teacher: boolean; pdf: boolean } = { student: false, teacher: false, pdf: false };
 
-// Initializes add-in when Office is ready
-Office.onReady(() => {});
-
-// Main function to create documents based on user selections
 async function createDocs() {
-  console.log("Begin: Document creation process");
+  console.log("Begin: ");
 
   await Word.run(async (context) => {
-    // Retrieve the checkbox selections from the UI
+    
     await getCheckboxes(context);
 
-    // Exit if no document type is selected
     if (!anyDocs()) {
       console.log("No Documents selected.");
       return;
     }
 
-    console.log("Fetching document content...");
-
-    // Fetch document content in both XML and HTML formats
-    await getXml(context);
-    await getHtml(context);
-
-    // Apply filtering for Word or PDF based on selected options
-    if (checkboxes.student) {
-      xmlData = filteroutStudHligh(xmlData, "xml");
-      htmlData = checkboxes.pdf ? pdfStudentFilter(htmlData) : filteroutStudHligh(htmlData, "html");
-    }
-    if (checkboxes.teacher) {
-      xmlData = filteroutTeachHlight(xmlData, "xml");
-      htmlData = checkboxes.pdf ? pdfTeacherFilter(htmlData) : filteroutTeachHlight(htmlData, "html");
-    }
-
-    // Create PDF if selected and skip creating Word document
     if (checkboxes.pdf) {
-      console.log('Creating PDF document only:');
-      makePDF(htmlData); // Use the filtered HTML data for PDF generation
+      console.log('Making new pdf doc:')
+      await getHtml(context);
+
+      if (checkboxes.student)
+        makePDF(pdfStudentFilter());
+      if (checkboxes.teacher)
+        makePDF(pdfTeacherFilter());
+
     } else {
-      // Create Word document if PDF is not selected
-      console.log('Creating Word document only:');
-      makeDocument(context, xmlData);
+      console.log('Making new word doc:')
+      await getXml(context);
+
+      if (checkboxes.student)
+        makeDocument(context, filterStudentXML());
+      if (checkboxes.teacher)
+        makeDocument(context, filterTeacherXML());
+
     }
   });
 
-  console.log("End: Document creation process");
+  console.log("End;");
 }
 
-// Retrieves user checkbox selections from the document creation form
 const getCheckboxes = async (context) => {
   const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
   const teacherDocCheckbox = <HTMLInputElement>document.getElementById("teacherDocCheckbox");
@@ -81,16 +67,18 @@ const getCheckboxes = async (context) => {
   checkboxes.student = studentDocCheckbox.checked;
   checkboxes.teacher = teacherDocCheckbox.checked;
   checkboxes.pdf = pdfDocCheckbox.checked;
-
-  console.log(`Checkbox settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher}, 'pdf': ${checkboxes.pdf} }`);
+  console.log(`settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher},  'pdf': ${checkboxes.pdf},}`);
 };
 
-// Checks if any document creation option is selected
 const anyDocs = (): boolean => {
-  return checkboxes.teacher || checkboxes.student || checkboxes.pdf;
+  return checkboxes.teacher || checkboxes.student;
 };
 
-// Fetches the document content in XML format
+const logToDoc = async (context, str: string) => {
+  const body: Word.Body = context.document.body;
+  body.insertText(str, Word.InsertLocation.start);
+};
+
 const getXml = async (context) => {
   const body: Word.Body = context.document.body;
   const bodyOOXML = body.getOoxml();
@@ -99,7 +87,6 @@ const getXml = async (context) => {
   xmlData = bodyOOXML.value;
 };
 
-// Fetches the document content in HTML format
 const getHtml = async (context) => {
   const body: Word.Body = context.document.body;
   const bodyHTML = body.getHtml();
@@ -108,38 +95,47 @@ const getHtml = async (context) => {
   htmlData = bodyHTML.value;
 };
 
+const makeDocument = async (context, content: string) => {
+  const doc = context.application.createDocument();
+  await context.sync();
+
+  const docBody: Word.Body = doc.body;
+  await context.sync();
+
+  docBody.insertOoxml(content, Word.InsertLocation.start);
+  await context.sync();
+
+  doc.open();
+  await context.sync();
+};
+
+const makePDF = async (content: string) => {
+  const pdfOptions = {
+    margin: 1,
+    filename: "document.pdf",
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+  };
+
+  html2pdf().from(content).set(pdfOptions).save();
+};
+
+
 // Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
-const filteroutStudHligh = (content: string, format: string): string => {
-  if (format === "xml") {
-    return content.replace(/<w:r[^>]*><w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>[\s\S]*?<\/w:r>/g, "");
-  } else {
-    let tempDiv = document.createElement("div");
-    tempDiv.innerHTML = content;
-    tempDiv.querySelectorAll("span[style*='background-color: yellow']").forEach((element) => {
-      element.remove();
-    });
-    return tempDiv.innerHTML;
-  }
+const filterStudentXML = (): string => {
+  return xmlData.replace(/<w:r[^>]*><w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>[\s\S]*?<\/w:r>/g, "");
 };
 
 // Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
-const filteroutTeachHlight = (content: string, format: string): string => {
-  if (format === "xml") {
-    return content.replace(/<w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
-  } else {
-    let tempDiv = document.createElement("div");
-    tempDiv.innerHTML = content;
-    tempDiv.querySelectorAll<HTMLElement>("span[style*='background-color: yellow']").forEach((element) => {
-      element.style.backgroundColor = "";
-    });
-    return tempDiv.innerHTML;
-  }
+const filterTeacherXML = (): string => {
+  return xmlData.replace(/<w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
 };
 
 // Filters out highlighted (yellow background) elements completely for Student in HTML format for PDF
-const pdfStudentFilter = (content: string): string => {
+const pdfStudentFilter = (): string => {
   let tempDiv = document.createElement("div");
-  tempDiv.innerHTML = content;
+  tempDiv.innerHTML = htmlData;
 
   // Removes elements with yellow background color in the HTML content
   tempDiv.querySelectorAll("span[style*='background-color: yellow']").forEach((element) => {
@@ -150,9 +146,9 @@ const pdfStudentFilter = (content: string): string => {
 };
 
 // Removes only the yellow highlight, keeping the text, for Teacher in HTML format for PDF
-const pdfTeacherFilter = (content: string): string => {
+const pdfTeacherFilter = (): string => {
   let tempDiv = document.createElement("div");
-  tempDiv.innerHTML = content;
+  tempDiv.innerHTML = htmlData;
 
   // Selects elements with yellow background color and removes only the background color style
   tempDiv.querySelectorAll<HTMLElement>("span[style*='background-color: yellow']").forEach((element) => {
@@ -160,41 +156,6 @@ const pdfTeacherFilter = (content: string): string => {
   });
 
   return tempDiv.innerHTML;
-};
-
-// Creates a new Word document with the specified content
-const makeDocument = async (context, content) => {
-  const doc = context.application.createDocument();
-  await context.sync();
-
-  const docBody: Word.Body = doc.body;
-  await context.sync();
-
-  // Inserts content into the new document
-  docBody.insertOoxml(content, Word.InsertLocation.start);
-  await context.sync();
-
-  // Opens the new document in Word
-  doc.open();
-  await context.sync();
-};
-
-// Generates and saves a PDF from HTML content
-const makePDF = async (content) => {
-  const pdfOptions = {
-    margin: 1,
-    filename: "document.pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-  };
-
-  // Create a temporary element to hold the content for conversion
-  let tempElement = document.createElement("div");
-  tempElement.innerHTML = content;
-
-  // Pass the temporary element to html2pdf for PDF conversion
-  html2pdf().from(tempElement).set(pdfOptions).save();
 };
 
 export default createDocs;
