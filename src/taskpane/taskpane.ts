@@ -124,7 +124,7 @@ const makePDF = async (content: string) => {
 
 // Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
 const filterStudentXML = (): string => {
-  return xmlData.replace(/<w:r[^>]*><w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>[\s\S]*?<\/w:r>/g, "");
+  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="yellow"\/>[\s\S]*?<\/w:p>/, "");
 };
 
 // Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
