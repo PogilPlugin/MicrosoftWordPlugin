@@ -1,11 +1,26 @@
+/* 
+Solution Explanation:
+This solution ensures that separate filters for both Student and Teacher are applied to HTML content specifically for PDF conversion. 
+
+Function Descriptions:
+- `createDocs`: Main function that coordinates document creation based on user choices.
+- `getCheckboxes`: Retrieves the selected options (Student, Teacher, PDF) from the user interface.
+- `getXml` and `getHtml`: Fetches the document content in XML and HTML formats.
+- `filterStudentXML`, `filterTeacherXML`: Filters for Student and Teacher in XML and HTML content for Word.
+- `pdfStudentFilter`, `pdfTeacherFilter`: Filters for Student and Teacher in HTML content specifically for PDF conversion.
+- `makeDocument`: Creates a new Word document with the specified content.
+- `makePDF`: Generates and saves a PDF from HTML content with the applied filters.
+
+--YIGIT TURAN
+*/
+
+
 /* global Word console */
 import html2pdf from "html2pdf.js";
 
 let xmlData: string;
 let htmlData: string;
 let checkboxes: { student: boolean; teacher: boolean; pdf: boolean } = { student: false, teacher: false, pdf: false };
-
-// add in parsing
 
 async function createDocs() {
   console.log("Begin: ");
@@ -16,30 +31,31 @@ async function createDocs() {
 
     if (!anyDocs()) {
       console.log("No Documents selected.");
+      notify("Error: No Documents selected.")
       return;
     }
+
+    notify("");
 
     if (checkboxes.pdf) {
       console.log('Making new pdf doc:')
       await getHtml(context);
 
       if (checkboxes.student)
-        makePDF(xmlData);
+        makePDF(pdfStudentFilter());
       if (checkboxes.teacher)
-        makePDF(xmlData);
+        makePDF(pdfTeacherFilter());
 
     } else {
       console.log('Making new word doc:')
       await getXml(context);
 
       if (checkboxes.student)
-        makeDocument(context, xmlData);
+        makeDocument(context, filterStudentXML());
       if (checkboxes.teacher)
-        makeDocument(context, xmlData);
+        makeDocument(context, filterTeacherXML());
 
     }
-
-    return;
   });
 
   console.log("End;");
@@ -82,7 +98,7 @@ const getHtml = async (context) => {
   htmlData = bodyHTML.value;
 };
 
-const makeDocument = async (context, content) => {
+const makeDocument = async (context, content: string) => {
   const doc = context.application.createDocument();
   await context.sync();
 
@@ -96,7 +112,7 @@ const makeDocument = async (context, content) => {
   await context.sync();
 };
 
-const makePDF = async (content) => {
+const makePDF = async (content: string) => {
   const pdfOptions = {
     margin: 1,
     filename: "document.pdf",
@@ -108,4 +124,63 @@ const makePDF = async (content) => {
   html2pdf().from(content).set(pdfOptions).save();
 };
 
-export default createDocs;
+
+// Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
+// TODO: make work inside table 
+const filterStudentXML = (): string => {
+  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="cyan"\/>[\s\S]*?<\/w:p>/, "");
+};
+
+// Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
+const filterTeacherXML = (): string => {
+  return xmlData.replace(/<w:rPr><w:highlight w:val="cyan"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
+};
+
+// Filters out highlighted (yellow background) elements completely for Student in HTML format for PDF
+const pdfStudentFilter = (): string => {
+  let tempDiv = document.createElement("div");
+  tempDiv.innerHTML = htmlData;
+
+  // Removes elements with yellow background color in the HTML content
+  tempDiv.querySelectorAll("span[style*='background-color: cyan']").forEach((element) => {
+    element.remove();
+  });
+
+  return tempDiv.innerHTML;
+};
+
+// Removes only the yellow highlight, keeping the text, for Teacher in HTML format for PDF
+const pdfTeacherFilter = (): string => {
+  let tempDiv = document.createElement("div");
+  tempDiv.innerHTML = htmlData;
+
+  // Selects elements with yellow background color and removes only the background color style
+  tempDiv.querySelectorAll<HTMLElement>("span[style*='background-color: cyan']").forEach((element) => {
+    element.style.backgroundColor = "";
+  });
+
+  return tempDiv.innerHTML;
+};
+
+function notify(message: string) {
+  const text = <HTMLElement>document.getElementById("notificationText");
+  text.innerText = message;
+}
+
+
+async function markSelection() {
+  await Word.run(async (context) => {
+      const selection = context.document.getSelection();
+      selection.load(['font', 'isEmpty']);
+      await context.sync();
+
+      if (!selection.isEmpty) 
+        selection.font.highlightColor = 'Turquoise';
+      await context.sync();
+
+      
+  }).catch((error) => {
+      console.error("Error:", error);
+  });
+}
+export {createDocs, markSelection};

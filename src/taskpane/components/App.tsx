@@ -1,5 +1,5 @@
 import * as React from "react";
-import createDocs from "../taskpane";
+import {createDocs, markSelection} from "../taskpane";
 import { makeStyles, Button, Label, Text } from "@fluentui/react-components";
 
 interface AppProps {
@@ -24,11 +24,13 @@ const useStyles = makeStyles({
     display: 'block',
     margin: '10px',
     textAlign: 'center',
-  }
+  },
+
 });
 
 const App: React.FC<AppProps> = () => {
   const styles = useStyles();
+
   return (
     <div className={styles.root}>
       <form className={styles.flex}>
@@ -47,11 +49,15 @@ const App: React.FC<AppProps> = () => {
       </form>
 
       <div className={styles.flex}>
-        <Text className={styles.section}></Text>
+        <Text id='notificationText' className={styles.section} ></Text>
       </div>
 
       <Button appearance="primary" className={styles.button} size="large" onClick={createDocs}>
         Create Documents
+      </Button>
+
+      <Button appearance="secondary" className={styles.button} size="large" onClick={markSelection}>
+        Mark Selection As Teacher Content
       </Button>
 
     </div>
