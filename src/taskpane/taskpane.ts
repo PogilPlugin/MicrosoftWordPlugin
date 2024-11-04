@@ -31,8 +31,11 @@ async function createDocs() {
 
     if (!anyDocs()) {
       console.log("No Documents selected.");
+      notify("Error: No Documents selected.")
       return;
     }
+
+    notify("");
 
     if (checkboxes.pdf) {
       console.log('Making new pdf doc:')
@@ -123,13 +126,14 @@ const makePDF = async (content: string) => {
 
 
 // Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
+// TODO: make work inside table 
 const filterStudentXML = (): string => {
-  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="yellow"\/>[\s\S]*?<\/w:p>/, "");
+  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="cyan"\/>[\s\S]*?<\/w:p>/, "");
 };
 
 // Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
 const filterTeacherXML = (): string => {
-  return xmlData.replace(/<w:rPr><w:highlight w:val="yellow"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
+  return xmlData.replace(/<w:rPr><w:highlight w:val="cyan"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
 };
 
 // Filters out highlighted (yellow background) elements completely for Student in HTML format for PDF
@@ -138,7 +142,7 @@ const pdfStudentFilter = (): string => {
   tempDiv.innerHTML = htmlData;
 
   // Removes elements with yellow background color in the HTML content
-  tempDiv.querySelectorAll("span[style*='background-color: yellow']").forEach((element) => {
+  tempDiv.querySelectorAll("span[style*='background-color: cyan']").forEach((element) => {
     element.remove();
   });
 
@@ -151,11 +155,32 @@ const pdfTeacherFilter = (): string => {
   tempDiv.innerHTML = htmlData;
 
   // Selects elements with yellow background color and removes only the background color style
-  tempDiv.querySelectorAll<HTMLElement>("span[style*='background-color: yellow']").forEach((element) => {
+  tempDiv.querySelectorAll<HTMLElement>("span[style*='background-color: cyan']").forEach((element) => {
     element.style.backgroundColor = "";
   });
 
   return tempDiv.innerHTML;
 };
 
-export default createDocs;
+function notify(message: string) {
+  const text = <HTMLElement>document.getElementById("notificationText");
+  text.innerText = message;
+}
+
+
+async function markSelection() {
+  await Word.run(async (context) => {
+      const selection = context.document.getSelection();
+      selection.load(['font', 'isEmpty']);
+      await context.sync();
+
+      if (!selection.isEmpty) 
+        selection.font.highlightColor = 'Turquoise';
+      await context.sync();
+
+      
+  }).catch((error) => {
+      console.error("Error:", error);
+  });
+}
+export {createDocs, markSelection};
