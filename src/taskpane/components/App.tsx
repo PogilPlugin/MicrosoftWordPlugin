@@ -24,8 +24,7 @@ const useStyles = makeStyles({
     display: 'block',
     margin: '10px',
     textAlign: 'center',
-  },
-
+  }
 });
 
 const App: React.FC<AppProps> = () => {
