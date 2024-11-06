@@ -8,7 +8,7 @@ interface AppProps {
 
 const useStyles = makeStyles({
   root: {
-    height: "100%",
+    height: "100vh",
     width: "100%",
     display: "flex",
     flexWrap: 'wrap',
@@ -41,10 +41,6 @@ const App: React.FC<AppProps> = () => {
         <div className={styles.section}>
           <input id="teacherDocCheckbox" type="checkbox" />
           <Label>Create Teacher Document</Label>
-        </div>
-        <div className={styles.section}>
-          <input id="pdfDocCheckbox" type="checkbox" />
-          <Label>Create PDF</Label>
         </div>
       </form>
 
