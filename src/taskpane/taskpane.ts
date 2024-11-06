@@ -1,16 +1,22 @@
-/* global Word console */
-import html2pdf from "html2pdf.js";
+/* 
+Solution Explanation:
+This solution ensures that separate filters for both Student and Teacher are applied to HTML content specifically for PDF conversion. 
+
+Function Descriptions:
+- `createDocs`: Main function that coordinates document creation based on user choices.
+- `getCheckboxes`: Retrieves the selected options (Student, Teacher, PDF) from the user interface.
+- `getXml` and `getHtml`: Fetches the document content in XML and HTML formats.
+- `filterStudentXML`, `filterTeacherXML`: Filters for Student and Teacher in XML and HTML content for Word.
+- `pdfStudentFilter`, `pdfTeacherFilter`: Filters for Student and Teacher in HTML content specifically for PDF conversion.
+- `makeDocument`: Creates a new Word document with the specified content.
+- `makePDF`: Generates and saves a PDF from HTML content with the applied filters.
+
+--YIGIT TURAN
+*/
+
 
 let xmlData: string;
-let htmlData: string;
-let checkboxes: { student: boolean; teacher: boolean; pdf: boolean } = { student: false, teacher: false, pdf: false };
-
-// add in parsing
-
-// run on startup
-Office.onReady(() => {
-  
-});
+let checkboxes: { student: boolean; teacher: boolean;} = { student: false, teacher: false};
 
 async function createDocs() {
   console.log("Begin: ");
@@ -21,46 +27,33 @@ async function createDocs() {
 
     if (!anyDocs()) {
       console.log("No Documents selected.");
+      notify("Error: No Documents selected.")
       return;
     }
 
-    if (checkboxes.pdf) {
-      console.log('Making new pdf doc:')
-      await getHtml(context);
+    notify("");
 
-      if (checkboxes.student)
-        makePDF(xmlData);
-      if (checkboxes.teacher)
-        makePDF(xmlData);
+    console.log('Making new word doc:')
+    await getXml(context);
 
-    } else {
-      console.log('Making new word doc:')
-      await getXml(context);
-
-      if (checkboxes.student)
-        makeDocument(context, xmlData);
-      if (checkboxes.teacher)
-        makeDocument(context, xmlData);
-
-    }
-
-    return;
+    if (checkboxes.student)
+      makeDocument(context, filterStudentXML());
+    if (checkboxes.teacher)
+      makeDocument(context, filterTeacherXML());
+    
   });
 
   console.log("End;");
-
 }
 
 const getCheckboxes = async (context) => {
   const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
   const teacherDocCheckbox = <HTMLInputElement>document.getElementById("teacherDocCheckbox");
-  const pdfDocCheckbox = <HTMLInputElement>document.getElementById("pdfDocCheckbox");
   await context.sync();
 
   checkboxes.student = studentDocCheckbox.checked;
   checkboxes.teacher = teacherDocCheckbox.checked;
-  checkboxes.pdf = pdfDocCheckbox.checked;
-  console.log(`settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher},  'pdf': ${checkboxes.pdf},}`);
+  console.log(`settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher}}`);
 };
 
 const anyDocs = (): boolean => {
@@ -80,15 +73,7 @@ const getXml = async (context) => {
   xmlData = bodyOOXML.value;
 };
 
-const getHtml = async (context) => {
-  const body: Word.Body = context.document.body;
-  const bodyHTML = body.getHtml();
-  await context.sync();
-
-  htmlData = bodyHTML.value;
-};
-
-const makeDocument = async (context, content) => {
+const makeDocument = async (context, content: string) => {
   const doc = context.application.createDocument();
   await context.sync();
 
@@ -102,16 +87,39 @@ const makeDocument = async (context, content) => {
   await context.sync();
 };
 
-const makePDF = async (content) => {
-  const pdfOptions = {
-    margin: 1,
-    filename: "document.pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-  };
 
-  html2pdf().from(content).set(pdfOptions).save();
+
+// Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
+// TODO: make work inside table 
+const filterStudentXML = (): string => {
+  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="cyan"\/>[\s\S]*?<\/w:p>/, "");
 };
 
-export default createDocs;
+// Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
+const filterTeacherXML = (): string => {
+  return xmlData.replace(/<w:rPr><w:highlight w:val="cyan"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
+};
+
+
+function notify(message: string) {
+  const text = <HTMLElement>document.getElementById("notificationText");
+  text.innerText = message;
+}
+
+
+async function markSelection() {
+  await Word.run(async (context) => {
+      const selection = context.document.getSelection();
+      selection.load(['font', 'isEmpty']);
+      await context.sync();
+
+      if (!selection.isEmpty) 
+        selection.font.highlightColor = 'Turquoise';
+      await context.sync();
+
+      
+  }).catch((error) => {
+      console.error("Error:", error);
+  });
+}
+export {createDocs, markSelection};

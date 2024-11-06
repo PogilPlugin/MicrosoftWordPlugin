@@ -1,5 +1,5 @@
 import * as React from "react";
-import createDocs from "../taskpane";
+import {createDocs, markSelection} from "../taskpane";
 import { makeStyles, Button, Label, Text } from "@fluentui/react-components";
 
 interface AppProps {
@@ -8,7 +8,7 @@ interface AppProps {
 
 const useStyles = makeStyles({
   root: {
-    height: "100%",
+    height: "100vh",
     width: "100%",
     display: "flex",
     flexWrap: 'wrap',
@@ -41,22 +41,18 @@ const App: React.FC<AppProps> = () => {
           <input id="teacherDocCheckbox" type="checkbox" />
           <Label>Create Teacher Document</Label>
         </div>
-        <div className={styles.section}>
-          <input id="pdfDocCheckbox" type="checkbox" />
-          <Label>Create PDF</Label>
-        </div>
       </form>
 
-      <form>
-                <input type="file" id="file" />
-          </form>
-
       <div className={styles.flex}>
-        <Text className={styles.section}></Text>
+        <Text id='notificationText' className={styles.section} ></Text>
       </div>
 
       <Button appearance="primary" className={styles.button} size="large" onClick={createDocs}>
         Create Documents
+      </Button>
+
+      <Button appearance="secondary" className={styles.button} size="large" onClick={markSelection}>
+        Mark Selection As Teacher Content
       </Button>
 
     </div>
