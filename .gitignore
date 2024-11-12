@@ -3,3 +3,6 @@ package-lock.json
 dist
 ~*
 .DS_Store
+testDoc
+*.docx
+testDocument.docx

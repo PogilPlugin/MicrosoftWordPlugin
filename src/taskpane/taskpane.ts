@@ -14,6 +14,8 @@ Function Descriptions:
 --YIGIT TURAN
 */
 
+import { electron } from "webpack";
+
 
 let xmlData: string;
 let checkboxes: { student: boolean; teacher: boolean;} = { student: false, teacher: false};
@@ -87,19 +89,32 @@ const makeDocument = async (context, content: string) => {
   await context.sync();
 };
 
-
-
-// Filters out highlighted (yellow background) elements completely for Student in XML or HTML format for Word
-// TODO: make work inside table 
+// Filters out highlighted (cyan background) elements completely for Student document
 const filterStudentXML = (): string => {
-  return xmlData.replace(/<w:p\b[^>]*>(?:(?!<\/w:p>)[\s\S])*?<w:highlight w:val="cyan"\/>[\s\S]*?<\/w:p>/, "");
+  const Parser: DOMParser = new DOMParser();
+  let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, 'application/xml');
+
+  const xmlCollection = xmlDocument.getElementsByTagName("w:highlight");
+
+  Array.from(xmlCollection).forEach( (element) => {
+    const p = element.parentElement.parentElement;
+
+    while(p.hasChildNodes()){
+      p.lastChild.remove();
+    }
+
+  });
+
+  const Serializer: XMLSerializer = new XMLSerializer();
+  const parsedXml: string = Serializer.serializeToString(xmlDocument);
+
+  return parsedXml;
 };
 
-// Removes only the yellow highlight, keeping the text, for Teacher in XML or HTML format for Word
+// Removes only the cyan highlight, keeping the text, for Teacher document
 const filterTeacherXML = (): string => {
   return xmlData.replace(/<w:rPr><w:highlight w:val="cyan"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
 };
-
 
 function notify(message: string) {
   const text = <HTMLElement>document.getElementById("notificationText");
