@@ -16,33 +16,28 @@ Function Descriptions:
 
 import { electron } from "webpack";
 
-
 let xmlData: string;
-let checkboxes: { student: boolean; teacher: boolean;} = { student: false, teacher: false};
+let checkboxes: { student: boolean; teacher: boolean } = { student: false, teacher: false };
 
 async function createDocs() {
   console.log("Begin: ");
 
   await Word.run(async (context) => {
-    
     await getCheckboxes(context);
 
     if (!anyDocs()) {
       console.log("No Documents selected.");
-      notify("Error: No Documents selected.")
+      notify("Error: No Documents selected.");
       return;
     }
 
     notify("");
 
-    console.log('Making new word doc:')
+    console.log("Making new word doc:");
     await getXml(context);
 
-    if (checkboxes.student)
-      makeDocument(context, filterStudentXML());
-    if (checkboxes.teacher)
-      makeDocument(context, filterTeacherXML());
-    
+    if (checkboxes.student) makeDocument(context, filterStudentXML());
+    if (checkboxes.teacher) makeDocument(context, filterTeacherXML());
   });
 
   console.log("End;");
@@ -92,17 +87,17 @@ const makeDocument = async (context, content: string) => {
 // Filters out highlighted (cyan background) elements completely for Student document
 const filterStudentXML = (): string => {
   const Parser: DOMParser = new DOMParser();
-  let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, 'application/xml');
+  let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
 
   const xmlCollection = xmlDocument.getElementsByTagName("w:highlight");
 
-  Array.from(xmlCollection).forEach( (element) => {
-    const p = element.parentElement.parentElement;
-
-    while(p.hasChildNodes()){
-      p.lastChild.remove();
+  Array.from(xmlCollection).forEach((element) => {
+    if (element.outerHTML.includes("cyan")) {
+      const p = element.parentElement.parentElement;
+      while (p.hasChildNodes()) {
+        p.lastChild.remove();
+      }
     }
-
   });
 
   const Serializer: XMLSerializer = new XMLSerializer();
@@ -113,7 +108,21 @@ const filterStudentXML = (): string => {
 
 // Removes only the cyan highlight, keeping the text, for Teacher document
 const filterTeacherXML = (): string => {
-  return xmlData.replace(/<w:rPr><w:highlight w:val="cyan"\/><\/w:rPr>/g, "<w:rPr></w:rPr>");
+  const Parser: DOMParser = new DOMParser();
+  let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
+
+  const xmlCollection = xmlDocument.getElementsByTagName("w:highlight");
+
+  Array.from(xmlCollection).forEach((element) => {
+    if (element.outerHTML.includes("cyan")) {
+      element.remove();
+    }
+  });
+
+  const Serializer: XMLSerializer = new XMLSerializer();
+  const parsedXml: string = Serializer.serializeToString(xmlDocument);
+
+  return parsedXml;
 };
 
 function notify(message: string) {
@@ -121,20 +130,16 @@ function notify(message: string) {
   text.innerText = message;
 }
 
-
 async function markSelection() {
   await Word.run(async (context) => {
-      const selection = context.document.getSelection();
-      selection.load(['font', 'isEmpty']);
-      await context.sync();
+    const selection = context.document.getSelection();
+    selection.load(["font", "isEmpty"]);
+    await context.sync();
 
-      if (!selection.isEmpty) 
-        selection.font.highlightColor = 'Turquoise';
-      await context.sync();
-
-      
+    if (!selection.isEmpty) selection.font.highlightColor = "Turquoise";
+    await context.sync();
   }).catch((error) => {
-      console.error("Error:", error);
+    console.error("Error:", error);
   });
 }
-export {createDocs, markSelection};
+export { createDocs, markSelection };
