@@ -1,68 +1,38 @@
-/* 
-Solution Explanation:
-This solution ensures that separate filters for both Student and Teacher are applied to HTML content specifically for PDF conversion. 
-
-Function Descriptions:
-- `createDocs`: Main function that coordinates document creation based on user choices.
-- `getCheckboxes`: Retrieves the selected options (Student, Teacher, PDF) from the user interface.
-- `getXml` and `getHtml`: Fetches the document content in XML and HTML formats.
-- `filterStudentXML`, `filterTeacherXML`: Filters for Student and Teacher in XML and HTML content for Word.
-- `pdfStudentFilter`, `pdfTeacherFilter`: Filters for Student and Teacher in HTML content specifically for PDF conversion.
-- `makeDocument`: Creates a new Word document with the specified content.
-- `makePDF`: Generates and saves a PDF from HTML content with the applied filters.
-
---YIGIT TURAN
-*/
-
-import { electron } from "webpack";
-
 let xmlData: string;
-let checkboxes: { student: boolean; teacher: boolean } = { student: false, teacher: false };
 
-async function createDocs() {
-  console.log("Begin: ");
+/**
+ * `createDocs` get action depends doc type.
+ * `type' can be student or teacher - 2 choice .
+ */
+async function createDocs(type?: "student" | "teacher") {
+  console.log("Begin: ", type);
 
   await Word.run(async (context) => {
-    await getCheckboxes(context);
-
-    if (!anyDocs()) {
-      console.log("No Documents selected.");
-      notify("Error: No Documents selected.");
+    if (!type) {
+      console.log("No document type selected.");
+      notify("Error: No document type selected.");
       return;
     }
 
     notify("");
 
-    console.log("Making new word doc:");
+    console.log(`Making ${type} word doc:`);
     await getXml(context);
 
-    if (checkboxes.student) makeDocument(context, filterStudentXML());
-    if (checkboxes.teacher) makeDocument(context, filterTeacherXML());
+    if (type === "student") {
+      makeDocument(context, filterStudentXML());
+    } else if (type === "teacher") {
+      makeDocument(context, filterTeacherXML());
+    }
   });
 
   console.log("End;");
 }
 
-const getCheckboxes = async (context) => {
-  const studentDocCheckbox = <HTMLInputElement>document.getElementById("studentDocCheckbox");
-  const teacherDocCheckbox = <HTMLInputElement>document.getElementById("teacherDocCheckbox");
-  await context.sync();
-
-  checkboxes.student = studentDocCheckbox.checked;
-  checkboxes.teacher = teacherDocCheckbox.checked;
-  console.log(`settings: { 'student': ${checkboxes.student}, 'teacher': ${checkboxes.teacher}}`);
-};
-
-const anyDocs = (): boolean => {
-  return checkboxes.teacher || checkboxes.student;
-};
-
-const logToDoc = async (context, str: string) => {
-  const body: Word.Body = context.document.body;
-  body.insertText(str, Word.InsertLocation.start);
-};
-
-const getXml = async (context) => {
+/**
+ * take xml data from word doc
+ */
+const getXml = async (context: Word.RequestContext) => {
   const body: Word.Body = context.document.body;
   const bodyOOXML = body.getOoxml();
   await context.sync();
@@ -70,7 +40,10 @@ const getXml = async (context) => {
   xmlData = bodyOOXML.value;
 };
 
-const makeDocument = async (context, content: string) => {
+/**
+ * create word doc and save content
+ */
+const makeDocument = async (context: Word.RequestContext, content: string) => {
   const doc = context.application.createDocument();
   await context.sync();
 
@@ -84,7 +57,9 @@ const makeDocument = async (context, content: string) => {
   await context.sync();
 };
 
-// Filters out highlighted (cyan background) elements completely for Student document
+/**
+ * make filter out for student document ( highlighted text is deleting)
+ */
 const filterStudentXML = (): string => {
   const Parser: DOMParser = new DOMParser();
   let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
@@ -93,9 +68,11 @@ const filterStudentXML = (): string => {
 
   Array.from(xmlCollection).forEach((element) => {
     if (element.outerHTML.includes("cyan")) {
-      const p = element.parentElement.parentElement;
-      while (p.hasChildNodes()) {
-        p.lastChild.remove();
+      const p = element.parentElement?.parentElement;
+      if (p) {
+        while (p.hasChildNodes()) {
+          p.lastChild?.remove();
+        }
       }
     }
   });
@@ -106,7 +83,9 @@ const filterStudentXML = (): string => {
   return parsedXml;
 };
 
-// Removes only the cyan highlight, keeping the text, for Teacher document
+/**
+ *make filter out for teacher document ( protect text - filterout higligh).
+ */
 const filterTeacherXML = (): string => {
   const Parser: DOMParser = new DOMParser();
   let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
@@ -125,21 +104,32 @@ const filterTeacherXML = (): string => {
   return parsedXml;
 };
 
+/**
+ * feedback message to user.
+ */
 function notify(message: string) {
-  const text = <HTMLElement>document.getElementById("notificationText");
-  text.innerText = message;
+  const text = document.getElementById("notificationText") as HTMLElement;
+  if (text) {
+    text.innerText = message;
+  }
 }
 
+/**
+ *make text as a teacher content.
+ */
 async function markSelection() {
   await Word.run(async (context) => {
     const selection = context.document.getSelection();
     selection.load(["font", "isEmpty"]);
     await context.sync();
 
-    if (!selection.isEmpty) selection.font.highlightColor = "Turquoise";
+    if (!selection.isEmpty) {
+      selection.font.highlightColor = "Turquoise";
+    }
     await context.sync();
   }).catch((error) => {
     console.error("Error:", error);
   });
 }
+
 export { createDocs, markSelection };
