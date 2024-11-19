@@ -16,7 +16,6 @@ const useStyles = makeStyles({
     justifyContent: "space-between",
     padding: "10px",
   },
-  //mark as selection button style
   topButton: {
     alignSelf: "center",
     margin: "5px",
@@ -28,8 +27,6 @@ const useStyles = makeStyles({
       backgroundColor: "darkred",
     },
   },
-
-  //create docs buttons
   bottomButtons: {
     display: "flex",
     justifyContent: "center",
@@ -45,11 +42,13 @@ const App: React.FC<AppProps> = () => {
   const styles = useStyles();
 
   const handleCreateStudentDoc = async () => {
-    await createDocs("student");  // student doc button 
+    await createDocs("student");
+    alert("Student document created successfully!");
   };
 
   const handleCreateTeacherDoc = async () => {
-    await createDocs("teacher"); // teacher doc button 
+    await createDocs("teacher");
+    alert("Teacher document created successfully!");
   };
 
   return (
@@ -57,7 +56,7 @@ const App: React.FC<AppProps> = () => {
       <Button
         appearance="secondary"
         className={styles.topButton}
-        size="large" // because alone in horizantally 
+        size="large"
         onClick={markSelection}
       >
         Mark Selection As Teacher Content
@@ -66,7 +65,7 @@ const App: React.FC<AppProps> = () => {
         <Button
           appearance="primary"
           className={styles.button}
-          size="small" //because there is 2 button in x axis
+          size="small"
           onClick={handleCreateStudentDoc}
         >
           Create Student Document
@@ -74,7 +73,7 @@ const App: React.FC<AppProps> = () => {
         <Button
           appearance="primary"
           className={styles.button}
-          size="small" // because there is 2 button in some spot
+          size="small"
           onClick={handleCreateTeacherDoc}
         >
           Create Teacher Document

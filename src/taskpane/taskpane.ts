@@ -1,8 +1,8 @@
 let xmlData: string;
 
 /**
- * `createDocs` get action depends doc type.
- * `type' can be student or teacher - 2 choice .
+ * `createDocs` get action depends on doc type.
+ * `type' can be student or teacher - 2 choices.
  */
 async function createDocs(type?: "student" | "teacher") {
   console.log("Begin: ", type);
@@ -30,7 +30,7 @@ async function createDocs(type?: "student" | "teacher") {
 }
 
 /**
- * take xml data from word doc
+ * Take XML data from Word document
  */
 const getXml = async (context: Word.RequestContext) => {
   const body: Word.Body = context.document.body;
@@ -41,7 +41,7 @@ const getXml = async (context: Word.RequestContext) => {
 };
 
 /**
- * create word doc and save content
+ * Create Word document and save content
  */
 const makeDocument = async (context: Word.RequestContext, content: string) => {
   const doc = context.application.createDocument();
@@ -58,54 +58,128 @@ const makeDocument = async (context: Word.RequestContext, content: string) => {
 };
 
 /**
- * make filter out for student document ( highlighted text is deleting)
+ * Filter XML for student document (highlighted text is removed)
  */
 const filterStudentXML = (): string => {
   const Parser: DOMParser = new DOMParser();
   let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
+  const body = xmlDocument.getElementsByTagName("w:body")[0];
 
-  const xmlCollection = xmlDocument.getElementsByTagName("w:highlight");
+  // Remove content before {{STUDENT START}}
+  const studentStart = Array.from(xmlDocument.getElementsByTagName("w:t")).find((element) =>
+    element.textContent?.includes("{{STUDENT START}}")
+  );
+  if (studentStart) {
+    let currentNode = body.firstChild;
+    while (currentNode && currentNode !== studentStart.parentElement?.parentElement) {
+      const nextNode = currentNode.nextSibling;
+      body.removeChild(currentNode);
+      currentNode = nextNode;
+    }
+    studentStart.parentElement?.parentElement?.remove();
+  }
 
-  Array.from(xmlCollection).forEach((element) => {
+  // Remove content after {{STUDENT STOP}}
+  const studentStop = Array.from(xmlDocument.getElementsByTagName("w:t")).find((element) =>
+    element.textContent?.includes("{{STUDENT STOP}}")
+  );
+  if (studentStop) {
+    let currentNode = studentStop.parentElement?.parentElement?.nextSibling;
+    while (currentNode) {
+      const nextNode = currentNode.nextSibling;
+      body.removeChild(currentNode);
+      currentNode = nextNode;
+    }
+    studentStop.parentElement?.parentElement?.remove();
+  }
+
+  // Remove highlighted content 
+  const highlights = Array.from(xmlDocument.getElementsByTagName("w:highlight"));
+  highlights.forEach((element) => {
     if (element.outerHTML.includes("cyan")) {
-      const p = element.parentElement?.parentElement;
-      if (p) {
-        while (p.hasChildNodes()) {
-          p.lastChild?.remove();
+      const parentParagraph = element.parentElement?.parentElement;
+      if (parentParagraph) {
+        while (parentParagraph.hasChildNodes()) {
+          parentParagraph.lastChild?.remove();
         }
       }
     }
   });
 
-  const Serializer: XMLSerializer = new XMLSerializer();
-  const parsedXml: string = Serializer.serializeToString(xmlDocument);
+  // Remove tags themselves
+  removeTags(xmlDocument, ["{{TEACHER START}}", "{{TEACHER STOP}}", "{{STUDENT START}}", "{{STUDENT STOP}}"]);
 
-  return parsedXml;
+  const Serializer: XMLSerializer = new XMLSerializer();
+  return Serializer.serializeToString(xmlDocument);
 };
 
 /**
- *make filter out for teacher document ( protect text - filterout higligh).
+ * Filter XML for teacher document (highlighted text's highlight is removed)
  */
 const filterTeacherXML = (): string => {
   const Parser: DOMParser = new DOMParser();
   let xmlDocument: XMLDocument = Parser.parseFromString(xmlData, "application/xml");
+  const body = xmlDocument.getElementsByTagName("w:body")[0];
 
-  const xmlCollection = xmlDocument.getElementsByTagName("w:highlight");
+  // Remove content before {{TEACHER START}}
+  const teacherStart = Array.from(xmlDocument.getElementsByTagName("w:t")).find((element) =>
+    element.textContent?.includes("{{TEACHER START}}")
+  );
+  if (teacherStart) {
+    let currentNode = body.firstChild;
+    while (currentNode && currentNode !== teacherStart.parentElement?.parentElement) {
+      const nextNode = currentNode.nextSibling;
+      body.removeChild(currentNode);
+      currentNode = nextNode;
+    }
+    teacherStart.parentElement?.parentElement?.remove();
+  }
 
-  Array.from(xmlCollection).forEach((element) => {
+  // Remove content after {{TEACHER STOP}}
+  const teacherStop = Array.from(xmlDocument.getElementsByTagName("w:t")).find((element) =>
+    element.textContent?.includes("{{TEACHER STOP}}")
+  );
+  if (teacherStop) {
+    let currentNode = teacherStop.parentElement?.parentElement?.nextSibling;
+    while (currentNode) {
+      const nextNode = currentNode.nextSibling;
+      body.removeChild(currentNode);
+      currentNode = nextNode;
+    }
+    teacherStop.parentElement?.parentElement?.remove();
+  }
+
+  // Remove highlight only (content remains)
+  const highlights = Array.from(xmlDocument.getElementsByTagName("w:highlight"));
+  highlights.forEach((element) => {
     if (element.outerHTML.includes("cyan")) {
-      element.remove();
+      element.remove(); // Only remove highlight node
     }
   });
 
-  const Serializer: XMLSerializer = new XMLSerializer();
-  const parsedXml: string = Serializer.serializeToString(xmlDocument);
+  // Remove tags themselves
+  removeTags(xmlDocument, ["{{TEACHER START}}", "{{TEACHER STOP}}", "{{STUDENT START}}", "{{STUDENT STOP}}"]);
 
-  return parsedXml;
+  const Serializer: XMLSerializer = new XMLSerializer();
+  return Serializer.serializeToString(xmlDocument);
 };
 
 /**
- * feedback message to user.
+ * Remove specific tags from XML document
+ */
+const removeTags = (xmlDocument: XMLDocument, tags: string[]) => {
+  tags.forEach((tag) => {
+    const elements = Array.from(xmlDocument.getElementsByTagName("w:t")).filter((element) =>
+      element.textContent?.includes(tag)
+    );
+    elements.forEach((element) => {
+      element.parentElement?.parentElement?.remove();
+    });
+  });
+};
+
+/**
+ * Feedback message to user
  */
 function notify(message: string) {
   const text = document.getElementById("notificationText") as HTMLElement;
@@ -115,7 +189,7 @@ function notify(message: string) {
 }
 
 /**
- *make text as a teacher content.
+ * Mark selection as teacher content
  */
 async function markSelection() {
   await Word.run(async (context) => {
