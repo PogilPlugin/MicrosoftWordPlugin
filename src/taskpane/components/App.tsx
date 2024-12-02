@@ -8,7 +8,7 @@ interface AppProps {
 
 const useStyles = makeStyles({
   root: {
-    height: "100vh",
+    height: "97vh",
     width: "100%",
     display: "flex",
     flexDirection: "column",
@@ -19,13 +19,9 @@ const useStyles = makeStyles({
   topButton: {
     alignSelf: "center",
     margin: "5px",
-    backgroundColor: "red",
     color: "white",
     padding: "12px 20px",
     fontSize: "1rem",
-    ":hover": {
-      backgroundColor: "darkred",
-    },
   },
   middleButtons: {
     display: "grid",
@@ -62,7 +58,7 @@ const App: React.FC<AppProps> = () => {
     <div className={styles.root}>
       {/* Top Button */}
       <Button
-        appearance="secondary"
+        appearance="primary"
         className={styles.topButton}
         size="large"
         onClick={markSelection}

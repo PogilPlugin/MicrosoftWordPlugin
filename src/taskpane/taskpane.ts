@@ -198,7 +198,7 @@ async function markSelection() {
     await context.sync();
 
     if (!selection.isEmpty) {
-      selection.font.highlightColor = "Turquoise";
+      selection.font.highlightColor = "null";
     }
     await context.sync();
   }).catch((error) => {
